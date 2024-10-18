@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const NewsLetterController = require("../Controllers/NewsLetterController");
+const NewsLetterController = require("../controllers/NewsLetterController");
 
 router.post("/add", (req, res) =>
   NewsLetterController.newsLetter.add(req, res)

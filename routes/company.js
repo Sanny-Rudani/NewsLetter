@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { ensureAuthorized } = require("../middleware/auth");
 
-const CompanyController = require("../Controllers/CompanyController");
+const CompanyController = require("../controllers/CompanyController");
 
 router.get("/get", ensureAuthorized, (req, res) =>
   CompanyController.company.get(req, res)

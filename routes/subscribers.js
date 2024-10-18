@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const SubscriberController = require("../Controllers/SubscribersController");
+const SubscriberController = require("../controllers/SubscribersController");
 
 router.post("/subscribe", (req, res) =>
   SubscriberController.subscriber.subscribe(req, res)
