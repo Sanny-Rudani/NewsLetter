@@ -1,31 +1,14 @@
 const mongoose = require("mongoose");
 const BLOG = mongoose.model("blogs");
+
 const {
   badRequestResponse,
   successResponse,
   errorResponse,
 } = require("../middleware/response");
+const { uploadFile, templateRender } = require("../helper");
 
 exports.blog = {
-  //Image upload function
-  getImageOptions: function (file) {
-    let pathDirectory = __dirname.split("\\");
-    pathDirectory.pop();
-    pathDirectory = pathDirectory.join("\\");
-    const uploadedFile = file;
-    const extension =
-      uploadedFile.name.split(".")[uploadedFile.name.split(".").length - 1];
-    const fileName = `${new Date().valueOf()}_${Math.ceil(
-      Math.random() * 10000
-    )}.${extension}`;
-    const uploadFilePath = `${pathDirectory}/uploads/${fileName}`;
-    return {
-      fileName,
-      uploadFilePath,
-      uploadedFile,
-    };
-  },
-
   //add blogs data
   add: async function (req, res) {
     try {
@@ -36,29 +19,26 @@ exports.blog = {
         image: "",
       };
       if (req.files && Object.keys(req.files).length > 0) {
-        const fileInfo = this.getImageOptions(req.files.image);
-        blog.image = fileInfo.fileName;
+        // Save the secure URL from Cloudinary in the blog object
+        const secureUrl = await uploadFile(req.files.image); // Await the uploadFile promise
+        blog.image = secureUrl;
 
-        fileInfo.uploadedFile.mv(fileInfo.uploadFilePath, async function (err) {
-          if (err)
-            return badRequestResponse(res, {
-              message: "Failed to save file",
-            });
-
-          const isCreated = await BLOG.create(blog);
-          if (isCreated) {
-            return successResponse(res, {
-              message: "Blog created successfully",
-            });
-          } else {
-            return badRequestResponse(res, {
-              message: "Failed to create blog",
-            });
-          }
-        });
+        // Create the blog entry in the database
+        const isCreated = await BLOG.create(blog);
+        if (isCreated) {
+          await templateRender(req.body.product, isCreated, "Blog");
+          return successResponse(res, {
+            message: "Blog created successfully",
+          });
+        } else {
+          return badRequestResponse(res, {
+            message: "Failed to create blog",
+          });
+        }
       } else {
         const isCreated = await BLOG.create(blog);
         if (isCreated) {
+          await templateRender(req.body.product, isCreated, "Blog");
           return successResponse(res, {
             message: "Blog created successfully",
           });
@@ -90,23 +70,18 @@ exports.blog = {
         product: req.body.product,
       };
       if (req.files && Object.keys(req.files).length > 0) {
-        const fileInfo = this.getImageOptions(req.files.image);
-        blog.image = fileInfo.fileName;
-        fileInfo.uploadedFile.mv(fileInfo.uploadFilePath, async function (err) {
-          if (err)
-            return badRequestResponse(res, {
-              message: "Failed to save file",
-            });
-          await BLOG.findOneAndUpdate(
-            { _id: blogInfo._id },
-            {
-              $set: blog,
-            }
-          );
-          return successResponse(res, {
-            message: "Blog updated successfully",
-          });
+        const secureUrl = await uploadFile(req.files.image); // Await the uploadFile promise
+        blog.image = secureUrl;
+        await BLOG.findOneAndUpdate(
+          { _id: blogInfo._id },
+          {
+            $set: blog,
+          }
+        );
+        return successResponse(res, {
+          message: "Blog updated successfully",
         });
+        // });
       } else {
         await BLOG.findOneAndUpdate(
           { _id: blogInfo._id },
@@ -129,12 +104,6 @@ exports.blog = {
       const product = req.query.product;
       let blogs = await BLOG.find({
         product: product,
-      });
-      blogs.map((x) => {
-        if (x.image) {
-          //create image url
-          x.image = `${process.env.BACKEND_URL}/uploads/${x.image}`;
-        }
       });
       return successResponse(res, {
         data: blogs,
@@ -179,7 +148,6 @@ exports.blog = {
         });
       }
       //create image url
-      blogInfo.image = `${process.env.BACKEND_URL}/uploads/${blogInfo.image}`;
       return successResponse(res, {
         data: blogInfo,
       });

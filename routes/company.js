@@ -8,6 +8,10 @@ router.get("/get", ensureAuthorized, (req, res) =>
   CompanyController.company.get(req, res)
 );
 
+router.get("/getById", ensureAuthorized, (req, res) =>
+  CompanyController.company.getById(req, res)
+);
+
 router.put("/update", ensureAuthorized, (req, res) =>
   CompanyController.company.update(req, res)
 );

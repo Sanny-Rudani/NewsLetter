@@ -9,6 +9,7 @@ const companySchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isSuperAdmin: { type: Boolean, default: false },
+    logo: { type: String, trim: true, default: "" },
     forgetPasswordOtp: {
       type: Number,
     },

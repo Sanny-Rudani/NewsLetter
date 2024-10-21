@@ -8,7 +8,7 @@ const {
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 var nodemailer = require("nodemailer");
-const { decryptToken } = require("../helper");
+const { decryptToken, uploadFile } = require("../helper");
 
 exports.company = {
   //add company or super admin
@@ -33,14 +33,39 @@ exports.company = {
         isSuperAdmin: req.body.isSuperAdmin,
         password: req.body.password,
       };
-      const isCreated = await COMPANY.create(company);
-      if (isCreated) {
-        return successResponse(res, {
-          message: "Company created successfully",
-        });
-      } else {
-        return badRequestResponse(res, {
-          message: "Failed to create company",
+      const token = req.headers.authorization?.split(" ")[1];
+
+      if (req.body.isSuperAdmin || token) {
+        if (req.files && Object.keys(req.files).length > 0) {
+          const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
+          company.logo = secureUrl;
+
+          const isCreated = await COMPANY.create(company);
+          if (isCreated) {
+            return successResponse(res, {
+              message: "Company created successfully",
+            });
+          } else {
+            return badRequestResponse(res, {
+              message: "Failed to create company",
+            });
+          }
+        } else {
+          const isCreated = await COMPANY.create(company);
+          if (isCreated) {
+            return successResponse(res, {
+              message: "Company created successfully",
+            });
+          } else {
+            return badRequestResponse(res, {
+              message: "Failed to create company",
+            });
+          }
+        }
+      } else if (!req.body.isSuperAdmin && !token) {
+        return res.status(401).json({
+          message: "Auth token not found",
+          isSuccess: false,
         });
       }
     } catch (error) {
@@ -67,16 +92,30 @@ exports.company = {
           message: "Password and Confirm Password must be same",
         });
       }
-
-      await COMPANY.findOneAndUpdate(
-        { _id: req.body._id },
-        {
-          $set: req.body,
-        }
-      );
-      return successResponse(res, {
-        message: "Coompany updated successfully",
-      });
+      if (req.files && Object.keys(req.files).length > 0) {
+        const company = req.body;
+        const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
+        company.logo = secureUrl;
+        await COMPANY.findOneAndUpdate(
+          { _id: req.body._id },
+          {
+            $set: company,
+          }
+        );
+        return successResponse(res, {
+          message: "Coompany updated successfully",
+        });
+      } else {
+        await COMPANY.findOneAndUpdate(
+          { _id: req.body._id },
+          {
+            $set: req.body,
+          }
+        );
+        return successResponse(res, {
+          message: "Coompany updated successfully",
+        });
+      }
     } catch (error) {
       return errorResponse(error, req, res);
     }
@@ -326,6 +365,26 @@ exports.company = {
           message: "Failed to update password",
         });
       }
+    } catch (error) {
+      return errorResponse(error, req, res);
+    }
+  },
+
+  //get company data by id
+  getById: async function (req, res) {
+    try {
+      let companyInfo = await COMPANY.findOne({
+        _id: req.query.id,
+      });
+      if (!companyInfo) {
+        return badRequestResponse(res, {
+          message: "Company not found",
+        });
+      }
+
+      return successResponse(res, {
+        data: companyInfo,
+      });
     } catch (error) {
       return errorResponse(error, req, res);
     }
