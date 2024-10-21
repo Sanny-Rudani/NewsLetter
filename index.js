@@ -21,8 +21,13 @@ app.use(
     extended: true,
   })
 );
-
-app.use(fileUpload());
+app.use(
+  fileUpload({
+    useTempFiles: true, // Store files temporarily for processing
+    tempFileDir: "/tmp/", // Temporary directory to store files
+  })
+);
+// app.use(fileUpload());
 
 const routes = require("./routes/index");
 app.use("/api", routes);
