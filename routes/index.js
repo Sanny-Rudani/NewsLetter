@@ -10,8 +10,8 @@ const blogRoutes = require("./blogs");
 
 router.use("/company", companyRoutes);
 router.use("/product", ensureAuthorized, productRoutes);
-router.use("/news-letter", ensureAuthorized, newsLetterRoutes);
+router.use("/news-letter", newsLetterRoutes);
 router.use("/subscriber", subscriberRoutes);
-router.use("/blog", ensureAuthorized, blogRoutes);
+router.use("/blog", blogRoutes);
 
 module.exports = router;
