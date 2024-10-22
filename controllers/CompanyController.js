@@ -217,6 +217,9 @@ exports.company = {
       });
       return successResponse(res, {
         message: "You are logged in successfully!",
+        menuAccess: adminInfo?.isSuperAdmin
+          ? ["company", "products"]
+          : ["newsletter", "blogs", "subscriber"],
         token,
       });
     } catch (error) {

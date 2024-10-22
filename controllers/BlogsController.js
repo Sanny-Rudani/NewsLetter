@@ -26,7 +26,7 @@ exports.blog = {
         // Create the blog entry in the database
         const isCreated = await BLOG.create(blog);
         if (isCreated) {
-          await templateRender(req.body.product, isCreated, "Blog");
+          // await templateRender(req.body.product, isCreated, "Blog");
           return successResponse(res, {
             message: "Blog created successfully",
           });
@@ -38,7 +38,7 @@ exports.blog = {
       } else {
         const isCreated = await BLOG.create(blog);
         if (isCreated) {
-          await templateRender(req.body.product, isCreated, "Blog");
+          // await templateRender(req.body.product, isCreated, "Blog");
           return successResponse(res, {
             message: "Blog created successfully",
           });
