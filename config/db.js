@@ -13,8 +13,10 @@ mongoose.set("debug", (collectionName, method, query, doc) => {
 mongoose.Promise = global.Promise;
 
 mongoose.connect(process.env.CONNECTION_URL, {
-  useUnifiedTopology: true,
   useNewUrlParser: true,
+  useUnifiedTopology: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true,
 });
 
 let db = mongoose.connection;
