@@ -103,7 +103,7 @@ exports.company = {
           }
         );
         return successResponse(res, {
-          message: "Coompany updated successfully",
+          message: "Company updated successfully",
         });
       } else {
         await COMPANY.findOneAndUpdate(
@@ -113,7 +113,7 @@ exports.company = {
           }
         );
         return successResponse(res, {
-          message: "Coompany updated successfully",
+          message: "Company updated successfully",
         });
       }
     } catch (error) {
@@ -178,14 +178,15 @@ exports.company = {
 
       // Check if the user is a Super Admin
       if (decoded.isSuperAdmin) {
-        let companies = await COMPANY.find({});
+        let companies = await COMPANY.find({ isSuperAdmin : false },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
         return successResponse(res, {
           data: companies,
         });
       } else {
         let companies = await COMPANY.find({
           _id: decoded._id,
-        });
+          isSuperAdmin : false
+        },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
         return successResponse(res, {
           data: companies,
         });
@@ -378,7 +379,8 @@ exports.company = {
     try {
       let companyInfo = await COMPANY.findOne({
         _id: req.query.id,
-      });
+        // isSuperAdmin : false
+      },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
       if (!companyInfo) {
         return badRequestResponse(res, {
           message: "Company not found",
