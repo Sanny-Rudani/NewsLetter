@@ -6,7 +6,7 @@ const {
   successResponse,
   errorResponse,
 } = require("../middleware/response");
-const { uploadFile, templateRender } = require("../helper");
+const { uploadFile } = require("../helper");
 
 exports.blog = {
   //add blogs data
@@ -16,12 +16,13 @@ exports.blog = {
         title: req.body.title,
         description: req.body.description,
         product: req.body.product,
-        image: "",
+        path: req.body.title.toLocaleLowerCase().replaceAll(" ", "-"),
+        thumbnail: "",
       };
       if (req.files && Object.keys(req.files).length > 0) {
         // Save the secure URL from Cloudinary in the blog object
-        const secureUrl = await uploadFile(req.files.image); // Await the uploadFile promise
-        blog.image = secureUrl;
+        const secureUrl = await uploadFile(req.files.thumbnail); // Await the uploadFile promise
+        blog.thumbnail = secureUrl;
 
         // Create the blog entry in the database
         const isCreated = await BLOG.create(blog);
@@ -68,10 +69,11 @@ exports.blog = {
         title: req.body.title,
         description: req.body.description,
         product: req.body.product,
+        path: req.body.title.toLocaleLowerCase().replaceAll(" ", "-"),
       };
       if (req.files && Object.keys(req.files).length > 0) {
-        const secureUrl = await uploadFile(req.files.image); // Await the uploadFile promise
-        blog.image = secureUrl;
+        const secureUrl = await uploadFile(req.files.thumbnail); // Await the uploadFile promise
+        blog.thumbnail = secureUrl;
         await BLOG.findOneAndUpdate(
           { _id: blogInfo._id },
           {
@@ -102,10 +104,16 @@ exports.blog = {
   get: async function (req, res) {
     try {
       const product = req.query.product;
-      let blogs = await BLOG.find({
+      const totalCount = await BLOG.countDocuments({ product: product });
+      const page = req.query.page
+      let blogs = page ? await BLOG.find({
+        product: product,
+      }).limit(6*page) : await BLOG.find({
         product: product,
       });
       return successResponse(res, {
+        totalCount: totalCount,
+        rememberCount: page? totalCount-(6*page) : 0,
         data: blogs,
       });
     } catch (error) {

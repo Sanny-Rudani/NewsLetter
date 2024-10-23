@@ -4,7 +4,8 @@ const blogSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
-    image: { type: String, trim: true, default: "" },
+    path: { type: String, required: true },
+    thumbnail: { type: String, trim: true, default: "" },
     product: { type: String, required: true },
   },
   {
