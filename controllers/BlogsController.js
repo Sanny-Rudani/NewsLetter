@@ -113,7 +113,7 @@ exports.blog = {
       });
       return successResponse(res, {
         totalCount: totalCount,
-        rememberCount: page? totalCount-(6*page) : 0,
+        rememberCount: page? totalCount-(6*page)<0 ? 0 : totalCount-(6*page) : 0,
         data: blogs,
       });
     } catch (error) {
