@@ -7,8 +7,10 @@ const {
 } = require("../middleware/response");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-var nodemailer = require("nodemailer");
 const { decryptToken, uploadFile } = require("../helper");
+const sendEmail = require("../utils/email");
+const templateFile = "./templates/verifyOTP.ejs";
+const ejs = require("ejs");
 
 exports.company = {
   //add company or super admin
@@ -27,16 +29,19 @@ exports.company = {
           message: "Password and Confirm Password must be same",
         });
       }
+
       const company = {
         name: req.body.name,
         email: req.body.email,
         isSuperAdmin: req.body.isSuperAdmin,
         password: req.body.password,
       };
+
       const token = req.headers.authorization?.split(" ")[1];
 
       if (req.body.isSuperAdmin || token) {
         if (req.files && Object.keys(req.files).length > 0) {
+          // Save the secure URL from Cloudinary in the blog object
           const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
           company.logo = secureUrl;
 
@@ -94,6 +99,7 @@ exports.company = {
       }
       if (req.files && Object.keys(req.files).length > 0) {
         const company = req.body;
+        // Save the secure URL from Cloudinary in the blog object
         const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
         company.logo = secureUrl;
         await COMPANY.findOneAndUpdate(
@@ -178,15 +184,15 @@ exports.company = {
 
       // Check if the user is a Super Admin
       if (decoded.isSuperAdmin) {
-        let companies = await COMPANY.find({ isSuperAdmin : false },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
+        let companies = await COMPANY.find({ isSuperAdmin: false }, '-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
         return successResponse(res, {
           data: companies,
         });
       } else {
         let companies = await COMPANY.find({
           _id: decoded._id,
-          isSuperAdmin : false
-        },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
+          isSuperAdmin: false
+        }, '-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
         return successResponse(res, {
           data: companies,
         });
@@ -240,41 +246,51 @@ exports.company = {
         });
       }
       const otpCode = this.getOtpCode();
-
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.gmailUserName,
-          pass: process.env.gmailPassword,
+      
+      await COMPANY.findOneAndUpdate(
+        { _id: adminInfo._id },
+        {
+          $set: {
+            forgetPasswordOtp: otpCode,
+            forgetPasswordOtpExpireTime: this.getOtpExpireTime(),
+          },
+        }
+      );
+      ejs.renderFile(
+        templateFile,
+        { 
+          otp: otpCode,
+          company: adminInfo?.name,
+          logo: adminInfo?.logo
         },
-      });
+     
+        async (error, renderedTemplate) => {
+          if (error) {
+            console.log("Error rendering template:", error);
+          } else {
+            //email sender function
+            const response = await sendEmail(
+              process.env.gmailUserName,
+              req.body.email,
+              "Verify OTP",
+              // `We have received your forget password request Code: ${otpCode} <br />Otp code will be expired in 10 minutes`,
+              renderedTemplate,
+              adminInfo?._id
+            )
 
-      const emailSended = await transporter.sendMail({
-        from: "Welders Math",
-        to: req.body.email,
-        subject: "Forget password",
-        text: "We have received your forget password request",
-        html: `Code: ${otpCode} <br />Otp code will be expired in 10 minutes`,
-      });
-      if (emailSended.accepted) {
-        await COMPANY.findOneAndUpdate(
-          { _id: adminInfo._id },
-          {
-            $set: {
-              forgetPasswordOtp: otpCode,
-              forgetPasswordOtpExpireTime: this.getOtpExpireTime(),
-            },
+            if (response) {
+
+              return successResponse(res, {
+                message: response?.message,
+              });
+            }else{
+              return successResponse(res, {
+                message:
+                  "Forget password otp code send, please check your email account.",
+              });
+            }
           }
-        );
-        return successResponse(res, {
-          message:
-            "Forget password otp code send, please check your email account.",
-        });
-      } else {
-        return badRequestResponse(res, {
-          message: "Failed to send otp code",
-        });
-      }
+        })
     } catch (error) {
       return errorResponse(error, req, res);
     }
@@ -380,7 +396,7 @@ exports.company = {
       let companyInfo = await COMPANY.findOne({
         _id: req.query.id,
         // isSuperAdmin : false
-      },'-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
+      }, '-password -forgetPasswordOtp -forgetPasswordOtpExpireTime');
       if (!companyInfo) {
         return badRequestResponse(res, {
           message: "Company not found",

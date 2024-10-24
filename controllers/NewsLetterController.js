@@ -24,10 +24,18 @@ exports.newsLetter = {
 
         const isCreated = await NEWS_LETTER.create(newsLetter);
         if (isCreated) {
-          await templateRender(req.body.product, isCreated, "News Letter");
-          return successResponse(res, {
-            message: "News Letter created successfully",
-          });
+          //email sender function
+          const response = await templateRender(req.body.product, isCreated, "News Letter");
+          if (response) {
+
+            return successResponse(res, {
+              message: response?.message,
+            });
+          }else{
+            return successResponse(res, {
+              message: "News Letter created successfully",
+            });
+          }
         } else {
           return badRequestResponse(res, {
             message: "Failed to create news letter",
@@ -36,10 +44,18 @@ exports.newsLetter = {
       } else {
         const isCreated = await NEWS_LETTER.create(newsLetter);
         if (isCreated) {
-          await templateRender(req.body.product, isCreated, "News Letter");
-          return successResponse(res, {
-            message: "NewsLetter created successfully",
-          });
+          //email sender function
+          const response = await templateRender(req.body.product, isCreated, "News Letter");
+          if (response) {
+
+            return successResponse(res, {
+              message: response?.message,
+            });
+          }else{
+            return successResponse(res, {
+              message: "News Letter created successfully",
+            });
+          }
         } else {
           return badRequestResponse(res, {
             message: "Failed to create NewsLetter",
@@ -68,6 +84,7 @@ exports.newsLetter = {
         product: req.body.product,
       };
       if (req.files && Object.keys(req.files).length > 0) {
+        // Save the secure URL from Cloudinary in the blog object
         const secureUrl = await uploadFile(req.files.image); // Await the uploadFile promise
         newsLetter.image = secureUrl;
         await NEWS_LETTER.findOneAndUpdate(

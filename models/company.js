@@ -10,6 +10,7 @@ const companySchema = new mongoose.Schema(
     password: { type: String, required: true },
     isSuperAdmin: { type: Boolean, default: false },
     logo: { type: String, trim: true, default: "" },
+    isEmailVerified: { type: Boolean, default:false},
     forgetPasswordOtp: {
       type: Number,
     },
