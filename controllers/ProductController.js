@@ -35,6 +35,7 @@ exports.product = {
         logo: "",
       };
       if (req.files && Object.keys(req.files).length > 0) {
+        // Save the secure URL from Cloudinary in the blog object
         const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
         product.logo = secureUrl;
 
@@ -88,6 +89,7 @@ exports.product = {
         email: req.body.email,
       };
       if (req.files && Object.keys(req.files).length > 0) {
+        // Save the secure URL from Cloudinary in the blog object
         const secureUrl = await uploadFile(req.files.logo); // Await the uploadFile promise
         product.logo = secureUrl;
         await PRODUCT.findOneAndUpdate(

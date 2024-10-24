@@ -7,11 +7,13 @@ const productRoutes = require("./product");
 const newsLetterRoutes = require("./newsLetter");
 const subscriberRoutes = require("./subscribers");
 const blogRoutes = require("./blogs");
+const servicesRoutes = require("./services")
 
 router.use("/company", companyRoutes);
 router.use("/product", ensureAuthorized, productRoutes);
 router.use("/news-letter", newsLetterRoutes);
 router.use("/subscriber", subscriberRoutes);
-router.use("/blog", blogRoutes);
+router.use("/blog", ensureAuthorized, blogRoutes);
+router.use("/service", servicesRoutes);
 
 module.exports = router;

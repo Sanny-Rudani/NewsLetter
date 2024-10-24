@@ -4,6 +4,7 @@ const cloudinary = require("cloudinary").v2;
 const ejs = require("ejs");
 const sendEmail = require("./utils/email");
 const Products = require("./models/product");
+const { badRequestResponse } = require("./middleware/response");
 const templateFile = "./templates/newsletter.ejs";
 
 // Configure Cloudinary
@@ -26,6 +27,7 @@ const decryptToken = (token) => {
   }
 };
 
+// Save the secure URL from Cloudinary in the blog object
 async function uploadFile(file) {
   const uploadedFile = file; // Access the uploaded file
 
@@ -44,34 +46,63 @@ async function uploadFile(file) {
   }
 }
 
-async function templateRender(product, data, label) {
+//email sender function
+async function templateRender( product, data, label) {
   const subscribers = await Subscribers.findOne({
     product: product,
   });
   const Product = await Products.findOne({
     _id: product,
   });
+
   data.logo = Product?.logo;
-  subscribers?.emails.map((email) => {
-    ejs.renderFile(
-      templateFile,
-      { data: data },
-      async (error, renderedTemplate) => {
-        if (error) {
-          console.log("Error rendering template:", error);
-        } else {
-          // Use the renderedTemplate to send the email
-          await sendEmail(
-            process.env.gmailusername,
-            email,
-            `${Product?.name} ${label}`,
-            renderedTemplate
-          );
-          // res.send({ text: "Hello World" });
-        }
+  for (const email of subscribers?.emails) {
+    try {
+      const renderedTemplate = await new Promise((resolve, reject) => {
+        ejs.renderFile(templateFile, { data: data }, (error, result) => {
+          if (error) {
+            console.log("Error rendering template:", error);
+            return reject(error); // Reject the promise if there is an error
+          }
+          resolve(result); // Resolve the promise with the rendered template
+        });
+      });
+  
+      const response = await sendEmail(
+        process.env.gmailusername,
+        email,
+        `${Product?.name} ${label}`,
+        renderedTemplate,
+        Product.company
+      );
+  
+      
+      if (response) {
+        return response; // Break the loop if the response is successful (or some other condition)
       }
-    );
-  });
+    } catch (error) {
+      console.log("An error occurred:", error);
+      return; // Optionally break the loop if an error occurs
+    }
+  }
 }
 
-module.exports = { decryptToken, uploadFile, templateRender };
+//authenticate company
+const getAuthenticateCompany = (req) => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  // Decrypt and verify the token
+  const decoded = decryptToken(token);
+
+  if (!decoded) {
+    return badRequestResponse(res, {
+      message: "Invalid or expired token",
+    });
+  }
+  return {
+    isSuperAdmin: decoded?.isSuperAdmin,
+    companyId: decoded?._id,
+  };
+}
+
+module.exports = { decryptToken, uploadFile, templateRender, getAuthenticateCompany };

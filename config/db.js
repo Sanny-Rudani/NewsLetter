@@ -6,6 +6,7 @@ require("../models/product");
 require("../models/newsLetter");
 require("../models/subscribers");
 require("../models/blog");
+require("../models/services");
 
 mongoose.set("debug", (collectionName, method, query, doc) => {
   console.log(`${collectionName}.${method}`, doc);
